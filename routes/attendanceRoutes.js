@@ -95,7 +95,7 @@ router.post("/attendanceR", verifyTeacher, async (req, res) => {
 
     return res.status(400).json({
       success: false,
-      message: "Current time does not fall in any attendance slot.0000",
+      message: "Current time does not fall in any attendance slot.",
     });
 
   } catch (error) {
