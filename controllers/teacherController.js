@@ -45,7 +45,7 @@ const addTeacher = async (req, res) => {
 
     await teacher.save();
 
-    res.status(201).json({ message: "Teacher added successfully", teacher });
+    res.status(201).json({ message: "Attendance Person added successfully", teacher });
   } catch (error) {
     console.error("Add Teacher Error:", error);
     res.status(500).json({ message: error.message });
@@ -126,7 +126,7 @@ const updateTeacher = async (req, res) => {
     }
 
     await teacher.save();
-    res.json({ message: "Teacher updated successfully", teacher });
+    res.json({ message: "Attendance Person updated successfully", teacher });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -153,9 +153,9 @@ const deleteTeacher = async (req, res) => {
 
     // Delete the teacher
     await Teacher.findByIdAndDelete(id);
-    console.log("Teacher Deleted Successfully");
+    console.log("Attendance Person Deleted Successfully");
 
-    res.json({ message: "Teacher deleted successfully" });
+    res.json({ message: "Attendance Person deleted successfully" });
   } catch (error) {
     console.error("Delete Error:", error);
     res.status(500).json({ message: "Error deleting teacher" });
@@ -178,7 +178,7 @@ const ApprovedTeacher = async (req, res) => {
     teacher.isApproved = req.body.isApproved;
     await teacher.save();
 
-    res.status(200).json({ message: "Teacher approval status updated successfully", teacher });
+    res.status(200).json({ message: "Attendance Person approval status updated successfully", teacher });
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message });
   }

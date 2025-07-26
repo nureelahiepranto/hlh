@@ -13,80 +13,171 @@ const path = require("path");
 require("dotenv").config();
 
 
-
 router.post("/attendanceR", verifyTeacher, async (req, res) => {
   const { studentId } = req.body;
 
-  if (!studentId ) {
-    return res.status(400).json({ success: false, message: "studentId are required." });
+  if (!studentId) {
+    return res.status(400).json({ success: false, message: "studentId is required." });
   }
 
   try {
-    // Validate student
-    const student = await Student.findOne({ _id: studentId });
+    const student = await Student.findById(studentId);
     if (!student) {
-      return res.status(404).json({ success: false, message: "Student not found with provided phone number." });
+      return res.status(404).json({ success: false, message: "Student not found." });
     }
 
     const now = new Date();
 
-    // Define today's date range
+    // Get start and end of today
     const startOfDay = new Date();
     startOfDay.setHours(0, 0, 0, 0);
 
     const endOfDay = new Date();
     endOfDay.setHours(23, 59, 59, 999);
 
-    // Check if attendance exists for today
+    // Find today's attendance
     let attendance = await Attendance.findOne({
       studentId,
       date: { $gte: startOfDay, $lte: endOfDay },
     });
 
     if (!attendance) {
-      // Step 1: Mark attendance start time (first check-in)
       attendance = new Attendance({
         studentId,
-        presentStartTime: now,
         date: now,
       });
-
-      await attendance.save();
-
-      return res.status(201).json({
-        success: true,
-        message: "Attendance start time marked successfully.",
-        data: attendance,
-      });
     }
 
-    // Step 2: Mark attendance end time (second check-out)
-    if (!attendance.presentEndTime) {
-      attendance.presentEndTime = now;
-      await attendance.save();
+    const currentHour = now.getHours();
+    const currentMinute = now.getMinutes();
 
-      return res.status(200).json({
-        success: true,
-        message: "Attendance end time marked successfully.",
-        data: attendance,
-      });
+    // Morning slot: 9:00 - 10:00
+    if (
+      currentHour === 22 ||
+      (currentHour === 23 && currentMinute === 0)
+    ) {
+      if (!attendance.presentStartTime) {
+        attendance.presentStartTime = now;
+        await attendance.save();
+        return res.status(200).json({ success: true, message: "Morning attendance marked", data: attendance });
+      } else {
+        return res.status(400).json({ success: false, message: "Morning attendance already marked." });
+      }
     }
 
-    // Step 3: Already marked both start and end
+    // Afternoon slot: 3:30 - 4:00
+    if (
+       currentHour === 12  ||
+      (currentHour === 13 && currentMinute === 0)
+    ) {
+      if (!attendance.afternoonAttendance) {
+        attendance.afternoonAttendance = now;
+        await attendance.save();
+        return res.status(200).json({ success: true, message: "Afternoon attendance marked", data: attendance });
+      } else {
+        return res.status(400).json({ success: false, message: "Afternoon attendance already marked." });
+      }
+    }
+
+    // Night slot: 9:00 - 10:00 PM
+    if (
+      currentHour === 0 ||
+      (currentHour === 1 && currentMinute === 0)
+    ) {
+      if (!attendance.presentEndTime) {
+        attendance.presentEndTime = now;
+        await attendance.save();
+        return res.status(200).json({ success: true, message: "Night attendance marked", data: attendance });
+      } else {
+        return res.status(400).json({ success: false, message: "Night attendance already marked." });
+      }
+    }
+
     return res.status(400).json({
       success: false,
-      message: "Attendance already marked (start and end) for today.",
+      message: "Current time does not fall in any attendance slot.0000",
     });
 
   } catch (error) {
-    console.error("Error marking attendance:", error.message);
-    res.status(500).json({
-      success: false,
-      message: "Internal server error while marking attendance.",
-      error: error.message,
-    });
+    console.error("Error marking attendance:", error);
+    return res.status(500).json({ success: false, message: "Server error", error: error.message });
   }
 });
+
+
+// router.post("/attendanceR", verifyTeacher, async (req, res) => {
+//   const { studentId } = req.body;
+
+//   if (!studentId ) {
+//     return res.status(400).json({ success: false, message: "studentId are required." });
+//   }
+
+//   try {
+//     // Validate student
+//     const student = await Student.findOne({ _id: studentId });
+//     if (!student) {
+//       return res.status(404).json({ success: false, message: "Student not found with provided phone number." });
+//     }
+
+//     const now = new Date();
+
+//     // Define today's date range
+//     const startOfDay = new Date();
+//     startOfDay.setHours(0, 0, 0, 0);
+
+//     const endOfDay = new Date();
+//     endOfDay.setHours(23, 59, 59, 999);
+
+//     // Check if attendance exists for today
+//     let attendance = await Attendance.findOne({
+//       studentId,
+//       date: { $gte: startOfDay, $lte: endOfDay },
+//     });
+
+//     if (!attendance) {
+//       // Step 1: Mark attendance start time (first check-in)
+//       attendance = new Attendance({
+//         studentId,
+//         presentStartTime: now,
+//         date: now,
+//       });
+
+//       await attendance.save();
+
+//       return res.status(201).json({
+//         success: true,
+//         message: "Attendance start time marked successfully.",
+//         data: attendance,
+//       });
+//     }
+
+//     // Step 2: Mark attendance end time (second check-out)
+//     if (!attendance.presentEndTime) {
+//       attendance.presentEndTime = now;
+//       await attendance.save();
+
+//       return res.status(200).json({
+//         success: true,
+//         message: "Attendance end time marked successfully.",
+//         data: attendance,
+//       });
+//     }
+
+//     // Step 3: Already marked both start and end
+//     return res.status(400).json({
+//       success: false,
+//       message: "Attendance already marked (start and end) for today.",
+//     });
+
+//   } catch (error) {
+//     console.error("Error marking attendance:", error.message);
+//     res.status(500).json({
+//       success: false,
+//       message: "Internal server error while marking attendance.",
+//       error: error.message,
+//     });
+//   }
+// });
 
 
 
@@ -142,12 +233,10 @@ router.get("/today", async (req, res) => {
     const startOfDay = new Date(today.setHours(0, 0, 0, 0));
     const endOfDay = new Date(today.setHours(23, 59, 59, 999));
 
-    // Fetch today's attendance records
     const attendanceRecords = await Attendance.find({
       date: { $gte: startOfDay, $lte: endOfDay },
-    }).populate("studentId", "name rollNumber className ");
+    }).populate("studentId", "name rollNumber className");
 
-    // Format the data
     const formattedRecords = attendanceRecords.map((record) => ({
       id: record._id,
       studentId: record.studentId._id,
@@ -155,6 +244,7 @@ router.get("/today", async (req, res) => {
       rollNumber: record.studentId.rollNumber,
       className: record.studentId.className,
       presentStartTime: record.presentStartTime,
+      afternoonAttendance: record.afternoonAttendance, // ✅ included
       presentEndTime: record.presentEndTime,
     }));
 
@@ -164,6 +254,7 @@ router.get("/today", async (req, res) => {
     res.status(500).json({ message: "Failed to fetch today's attendance", error });
   }
 });
+
 
 // Setup Nodemailer transporter
 // const transporter = nodemailer.createTransport({

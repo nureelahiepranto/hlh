@@ -70,7 +70,7 @@ const createStudent = async (req, res) => {
     });
     await student.save();
 
-    res.status(201).json({ message: 'Student created successfully', user, student });
+    res.status(201).json({ message: 'Employee created successfully', user, student });
   } catch (error) {
     console.log(error.message);
     
