@@ -53,8 +53,8 @@ router.post("/attendanceR", verifyTeacher, async (req, res) => {
 
     // Morning slot: 9:00 - 10:00
     if (
-      currentHour === 22 ||
-      (currentHour === 23 && currentMinute === 0)
+      currentHour === 9 ||
+      (currentHour === 10 && currentMinute === 0)
     ) {
       if (!attendance.presentStartTime) {
         attendance.presentStartTime = now;
@@ -67,8 +67,8 @@ router.post("/attendanceR", verifyTeacher, async (req, res) => {
 
     // Afternoon slot: 3:30 - 4:00
     if (
-       currentHour === 12  ||
-      (currentHour === 13 && currentMinute === 0)
+       currentHour === 15 ||
+      (currentHour === 16 && currentMinute === 0)
     ) {
       if (!attendance.afternoonAttendance) {
         attendance.afternoonAttendance = now;
@@ -81,8 +81,8 @@ router.post("/attendanceR", verifyTeacher, async (req, res) => {
 
     // Night slot: 9:00 - 10:00 PM
     if (
-      currentHour === 0 ||
-      (currentHour === 1 && currentMinute === 0)
+      currentHour === 21 ||
+      (currentHour === 22 && currentMinute === 0)
     ) {
       if (!attendance.presentEndTime) {
         attendance.presentEndTime = now;
