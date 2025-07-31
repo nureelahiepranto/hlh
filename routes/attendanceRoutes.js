@@ -13,7 +13,7 @@ const path = require("path");
 require("dotenv").config();
 
 
-router.post("/attendanceR", verifyTeacher, async (req, res) => {
+router.post("/attendanceR", verifyTeacher, async (req, res) => { 
   const { studentId } = req.body;
 
   if (!studentId) {
@@ -65,9 +65,17 @@ router.post("/attendanceR", verifyTeacher, async (req, res) => {
       }
     }
 
+    // ✅ Prevent afternoon/night marking if morning not done
+    if (!attendance.presentStartTime) {
+      return res.status(403).json({
+        success: false,
+        message: "Morning attendance missing. Cannot mark afternoon or night attendance.",
+      });
+    }
+
     // Afternoon slot: 3:30 - 4:00
     if (
-       currentHour === 15 ||
+      currentHour === 15 ||
       (currentHour === 16 && currentMinute === 0)
     ) {
       if (!attendance.afternoonAttendance) {
@@ -103,6 +111,7 @@ router.post("/attendanceR", verifyTeacher, async (req, res) => {
     return res.status(500).json({ success: false, message: "Server error", error: error.message });
   }
 });
+
 
 
 // router.post("/attendanceR", verifyTeacher, async (req, res) => {
