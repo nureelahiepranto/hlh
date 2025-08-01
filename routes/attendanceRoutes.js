@@ -319,12 +319,21 @@ router.get("/all", async (req, res) => {
 
 router.get("/today", async (req, res) => {
   try {
-    const today = new Date();
-    const startOfDay = new Date(today.setHours(0, 0, 0, 0));
-    const endOfDay = new Date(today.setHours(23, 59, 59, 999));
+    // Convert current time to Bangladesh Time (UTC+6)
+    const now = new Date(new Date().getTime() + 6 * 60 * 60 * 1000);
+
+    const bdStartOfDay = new Date(now);
+    bdStartOfDay.setHours(0, 0, 0, 0);
+
+    const bdEndOfDay = new Date(now);
+    bdEndOfDay.setHours(23, 59, 59, 999);
+
+    // Now convert BD time back to UTC for MongoDB filtering
+    const startOfDayUTC = new Date(bdStartOfDay.getTime() - 6 * 60 * 60 * 1000);
+    const endOfDayUTC = new Date(bdEndOfDay.getTime() - 6 * 60 * 60 * 1000);
 
     const attendanceRecords = await Attendance.find({
-      date: { $gte: startOfDay, $lte: endOfDay },
+      date: { $gte: startOfDayUTC, $lte: endOfDayUTC },
     }).populate("studentId", "name rollNumber className");
 
     const formattedRecords = attendanceRecords.map((record) => ({
@@ -334,7 +343,7 @@ router.get("/today", async (req, res) => {
       rollNumber: record.studentId.rollNumber,
       className: record.studentId.className,
       presentStartTime: record.presentStartTime,
-      afternoonAttendance: record.afternoonAttendance, // ✅ included
+      afternoonAttendance: record.afternoonAttendance,
       presentEndTime: record.presentEndTime,
     }));
 
@@ -344,6 +353,7 @@ router.get("/today", async (req, res) => {
     res.status(500).json({ message: "Failed to fetch today's attendance", error });
   }
 });
+
 
 
 // Setup Nodemailer transporter
