@@ -53,8 +53,8 @@ router.post("/attendanceR", verifyTeacher, async (req, res) => {
 
     // Morning slot: 9:00 - 10:00
     if (
-      currentHour === 9 ||
-      (currentHour === 10 && currentMinute === 0)
+      currentHour === 10 ||
+      (currentHour === 11 && currentMinute === 0)
     ) {
       if (!attendance.presentStartTime) {
         attendance.presentStartTime = now;
@@ -66,12 +66,12 @@ router.post("/attendanceR", verifyTeacher, async (req, res) => {
     }
 
     // ✅ Prevent afternoon/night marking if morning not done
-    if (!attendance.presentStartTime) {
-      return res.status(403).json({
-        success: false,
-        message: "Morning attendance missing. Cannot mark afternoon or night attendance.",
-      });
-    }
+    // if (!attendance.presentStartTime) {
+    //   return res.status(403).json({
+    //     success: false,
+    //     message: "Morning attendance missing. Cannot mark afternoon or night attendance.",
+    //   });
+    // }
 
     // Afternoon slot: 3:30 - 4:00
     if (
