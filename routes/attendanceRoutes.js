@@ -325,16 +325,26 @@ router.get("/today", async (req, res) => {
       date: { $gte: startOfDay, $lte: endOfDay },
     }).populate("studentId", "name rollNumber className");
 
-    const formattedRecords = attendanceRecords.map((record) => ({
-      id: record._id,
-      studentId: record.studentId._id,
-      name: record.studentId.name,
-      rollNumber: record.studentId.rollNumber,
-      className: record.studentId.className,
-      presentStartTime: record.presentStartTime,
-      afternoonAttendance: record.afternoonAttendance, // ✅ included
-      presentEndTime: record.presentEndTime,
-    }));
+    const formattedRecords = attendanceRecords.map((record) => {
+      // ✅ Convert UTC times to Bangladesh Time (UTC+6)
+      const formatTime = (utcDate) => {
+        if (!utcDate) return null;
+        const bdOffset = 6 * 60 * 60000; // UTC+6 in milliseconds
+        const bdTime = new Date(utcDate.getTime() + bdOffset);
+        return bdTime.toISOString(); // Or format as "HH:mm:ss"
+      };
+
+      return {
+        id: record._id,
+        studentId: record.studentId._id,
+        name: record.studentId.name,
+        rollNumber: record.studentId.rollNumber,
+        className: record.studentId.className,
+        presentStartTime: formatTime(record.presentStartTime),
+        afternoonAttendance: formatTime(record.afternoonAttendance),
+        presentEndTime: formatTime(record.presentEndTime),
+      };
+    });
 
     res.status(200).json({ attendance: formattedRecords });
   } catch (error) {
