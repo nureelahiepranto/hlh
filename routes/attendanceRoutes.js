@@ -26,12 +26,16 @@ router.post("/attendanceR", verifyTeacher, async (req, res) => {
       return res.status(404).json({ success: false, message: "Student not found." });
     }
 
+    // ✅ Get Bangladesh Time (UTC+6)
     const now = new Date();
+    const bdOffset = 6 * 60; // in minutes
+    const utc = now.getTime() + now.getTimezoneOffset() * 60000;
+    const bdTime = new Date(utc + bdOffset * 60000);
 
-    const startOfDay = new Date();
+    const startOfDay = new Date(bdTime);
     startOfDay.setHours(0, 0, 0, 0);
 
-    const endOfDay = new Date();
+    const endOfDay = new Date(bdTime);
     endOfDay.setHours(23, 59, 59, 999);
 
     let attendance = await Attendance.findOne({
@@ -42,20 +46,20 @@ router.post("/attendanceR", verifyTeacher, async (req, res) => {
     if (!attendance) {
       attendance = new Attendance({
         studentId,
-        date: now,
+        date: bdTime,
       });
     }
 
-    const currentHour = now.getHours();
-    const currentMinute = now.getMinutes();
+    const currentHour = bdTime.getHours();
+    const currentMinute = bdTime.getMinutes();
     const totalMinutes = currentHour * 60 + currentMinute;
 
-    console.log("Current Time:", currentHour + ":" + currentMinute);
+    console.log("BD Time:", currentHour + ":" + currentMinute);
 
     // ✅ Morning slot: 9:00 AM - 10:00 AM (540 to 600)
-    if (totalMinutes >= 1140 && totalMinutes <= 1180) {
+    if (totalMinutes >= 1320 && totalMinutes <= 1380) {
       if (!attendance.presentStartTime) {
-        attendance.presentStartTime = now;
+        attendance.presentStartTime = bdTime;
         await attendance.save();
         return res.status(200).json({ success: true, message: "Morning attendance marked", data: attendance });
       } else {
@@ -64,14 +68,13 @@ router.post("/attendanceR", verifyTeacher, async (req, res) => {
     }
 
     // ✅ Afternoon slot: 3:30 PM - 4:00 PM (930 to 960)
-    if (totalMinutes >= 1190 && totalMinutes <= 1200) {
-      // ❌ Block if no morning attendance
+    if (totalMinutes >= 1400 && totalMinutes <= 1410) {
       if (!attendance.presentStartTime) {
         return res.status(400).json({ success: false, message: "Morning attendance is required before marking afternoon attendance." });
       }
 
       if (!attendance.afternoonAttendance) {
-        attendance.afternoonAttendance = now;
+        attendance.afternoonAttendance = bdTime;
         await attendance.save();
         return res.status(200).json({ success: true, message: "Afternoon attendance marked", data: attendance });
       } else {
@@ -80,14 +83,13 @@ router.post("/attendanceR", verifyTeacher, async (req, res) => {
     }
 
     // ✅ Night slot: 9:00 PM - 10:00 PM (1260 to 1320)
-    if (totalMinutes >= 1260 && totalMinutes <= 1320) {
-      // ❌ Block if no morning attendance
+    if (totalMinutes >= 1420 && totalMinutes <= 1450) {
       if (!attendance.presentStartTime) {
         return res.status(400).json({ success: false, message: "Morning attendance is required before marking night attendance." });
       }
 
       if (!attendance.presentEndTime) {
-        attendance.presentEndTime = now;
+        attendance.presentEndTime = bdTime;
         await attendance.save();
         return res.status(200).json({ success: true, message: "Night attendance marked", data: attendance });
       } else {
@@ -97,7 +99,7 @@ router.post("/attendanceR", verifyTeacher, async (req, res) => {
 
     return res.status(400).json({
       success: false,
-      message: "Current time does not fall in any attendance slot.",
+      message: "Current time does not fall in any attendance slot.14",
     });
 
   } catch (error) {
@@ -315,21 +317,19 @@ router.get("/all", async (req, res) => {
 
 router.get("/today", async (req, res) => {
   try {
-    // Convert current time to Bangladesh Time (UTC+6)
-    const now = new Date(new Date().getTime() + 6 * 60 * 60 * 1000);
+    const now = new Date();
+    const bdOffset = 6 * 60;
+    const utc = now.getTime() + now.getTimezoneOffset() * 60000;
+    const bdTime = new Date(utc + bdOffset * 60000);
 
-    const bdStartOfDay = new Date(now);
-    bdStartOfDay.setHours(0, 0, 0, 0);
+    const startOfDay = new Date(bdTime);
+    startOfDay.setHours(0, 0, 0, 0);
 
-    const bdEndOfDay = new Date(now);
-    bdEndOfDay.setHours(23, 59, 59, 999);
-
-    // Now convert BD time back to UTC for MongoDB filtering
-    const startOfDayUTC = new Date(bdStartOfDay.getTime() - 6 * 60 * 60 * 1000);
-    const endOfDayUTC = new Date(bdEndOfDay.getTime() - 6 * 60 * 60 * 1000);
+    const endOfDay = new Date(bdTime);
+    endOfDay.setHours(23, 59, 59, 999);
 
     const attendanceRecords = await Attendance.find({
-      date: { $gte: startOfDayUTC, $lte: endOfDayUTC },
+      date: { $gte: startOfDay, $lte: endOfDay },
     }).populate("studentId", "name rollNumber className");
 
     const formattedRecords = attendanceRecords.map((record) => ({
@@ -349,7 +349,6 @@ router.get("/today", async (req, res) => {
     res.status(500).json({ message: "Failed to fetch today's attendance", error });
   }
 });
-
 
 
 // Setup Nodemailer transporter
