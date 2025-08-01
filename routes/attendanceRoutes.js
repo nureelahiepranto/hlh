@@ -95,7 +95,7 @@ require("dotenv").config();
 
     return res.status(400).json({
       success: false,
-      message: "Current time does not fall in any attendance slot.",
+      message: "Current time does not fall in any attendance slot.ok",
     });
 
   } catch (error) {
