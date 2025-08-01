@@ -89,7 +89,7 @@ router.post("/attendanceR", verifyTeacher, async (req, res) => {
     }
 
     // ✅ Night slot: 9:00 PM - 10:00 PM (1260 to 1320)
-    if (totalMinutes >= 1260 && totalMinutes <= 1320) {
+    if (totalMinutes >= 1020 && totalMinutes <= 1080) {
       // ❌ Block if no morning attendance
       if (!attendance.presentStartTime) {
         return res.status(400).json({ success: false, message: "Morning attendance is required before marking night attendance." });
@@ -106,7 +106,7 @@ router.post("/attendanceR", verifyTeacher, async (req, res) => {
 
     return res.status(400).json({
       success: false,
-      message: "Current time does not fall in any attendance slot.",
+      message: "Current time does not fall in any attendance slot.1080",
     });
 
   } catch (error) {
