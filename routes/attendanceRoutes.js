@@ -45,7 +45,7 @@ router.post("/attendanceR", verifyTeacher, async (req, res) => {
     }
 
     // Slot 1: Morning (9:00 AM - 10:00 AM)
-    if (isTimeInRange(now, 9, 0, 10, 0)) {
+    if (isTimeInRange(now, 10, 0, 11, 0)) {
       if (attendance.presentStartTime) {
         return res.status(400).json({ message: "Morning attendance already marked." });
       }
@@ -75,7 +75,7 @@ router.post("/attendanceR", verifyTeacher, async (req, res) => {
     }
 
     else {
-      return res.status(400).json({ message: "Current time does not fall in any attendance slot.2" });
+      return res.status(400).json({ message: "Current time does not fall in any attendance slot.10" });
     }
 
     // Save to DB
