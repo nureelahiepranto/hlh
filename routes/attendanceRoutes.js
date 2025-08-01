@@ -46,11 +46,24 @@ router.post("/attendanceR", verifyTeacher, async (req, res) => {
       });
     }
 
-    const hour = now.getHours();
-    const minute = now.getMinutes();
+    // Time Slot Definitions
+    const morningStart = new Date(now);
+    morningStart.setHours(9, 0, 0, 0);
+    const morningEnd = new Date(now);
+    morningEnd.setHours(11, 0, 0, 0);
 
-    // Morning slot: 9:00 - 10:00
-    if ((hour === 10) || (hour === 11 && minute === 0)) {
+    const afternoonStart = new Date(now);
+    afternoonStart.setHours(15, 0, 0, 0);
+    const afternoonEnd = new Date(now);
+    afternoonEnd.setHours(16, 0, 0, 0);
+
+    const nightStart = new Date(now);
+    nightStart.setHours(21, 0, 0, 0);
+    const nightEnd = new Date(now);
+    nightEnd.setHours(22, 0, 0, 0);
+
+    // Check Morning Attendance Slot
+    if (now >= morningStart && now < morningEnd) {
       if (!attendance.presentStartTime) {
         attendance.presentStartTime = now;
         await attendance.save();
@@ -60,8 +73,8 @@ router.post("/attendanceR", verifyTeacher, async (req, res) => {
       }
     }
 
-    // Afternoon slot: 3:00 - 4:00
-    if ((hour === 15) || (hour === 16 && minute === 0)) {
+    // Check Afternoon Attendance Slot
+    if (now >= afternoonStart && now < afternoonEnd) {
       if (!attendance.presentStartTime) {
         return res.status(400).json({
           success: false,
@@ -78,8 +91,8 @@ router.post("/attendanceR", verifyTeacher, async (req, res) => {
       }
     }
 
-    // Night slot: 9:00 - 10:00 PM
-    if ((hour === 21) || (hour === 22 && minute === 0)) {
+    // Check Night Attendance Slot
+    if (now >= nightStart && now < nightEnd) {
       if (!attendance.presentStartTime) {
         return res.status(400).json({
           success: false,
@@ -98,7 +111,7 @@ router.post("/attendanceR", verifyTeacher, async (req, res) => {
 
     return res.status(400).json({
       success: false,
-      message: "Current time does not fall in any attendance slot.11",
+      message: "Current time does not fall in any attendance slot.9",
     });
 
   } catch (error) {
