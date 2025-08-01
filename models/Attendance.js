@@ -2,11 +2,11 @@ const mongoose = require("mongoose");
 
 const attendanceSchema = new mongoose.Schema({
   studentId: { type: mongoose.Schema.Types.ObjectId, ref: "Student", required: true },
-  date: { type: Date, default: Date.now },
+  date: { type: Date, required: true, },
   timestamp: { type: Date, default: Date.now }, // Store the timestamp of attendance
-  presentStartTime: { type: Date },   // 9:00 AM - 10:00 AM
-  afternoonAttendance: { type: Date }, // 3:30 PM - 4:00 PM
-  presentEndTime: { type: Date },     // 9:00 PM - 10:00 PM
+  presentStartTime: { type: Date, default: null, },   // 9:00 AM - 10:00 AM
+  afternoonAttendance: { type: Date, default: null, }, // 3:30 PM - 4:00 PM
+  presentEndTime: { type: Date, default: null, },     // 9:00 PM - 10:00 PM
 
   createdAt: { type: Date, default: Date.now },
 });
