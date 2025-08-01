@@ -12,111 +12,79 @@ const PDFDocument = require("pdfkit");
 const path = require("path");
 require("dotenv").config();
 
+// Helper to check if current time is within a range
+function isTimeInRange(current, startHour, startMinute, endHour, endMinute) {
+  const now = new Date(current);
+  const start = new Date(current);
+  start.setHours(startHour, startMinute, 0, 0);
+  const end = new Date(current);
+  end.setHours(endHour, endMinute, 59, 999);
+  return now >= start && now <= end;
+}
 
 router.post("/attendanceR", verifyTeacher, async (req, res) => {
-  const { studentId } = req.body;
-
-  if (!studentId) {
-    return res.status(400).json({ success: false, message: "studentId is required." });
-  }
-
   try {
-    const student = await Student.findById(studentId);
-    if (!student) {
-      return res.status(404).json({ success: false, message: "Student not found." });
-    }
-
+    const { studentId } = req.body;
     const now = new Date();
 
-    const startOfDay = new Date();
-    startOfDay.setHours(0, 0, 0, 0);
+    // Start and end of today
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    const todayEnd = new Date();
+    todayEnd.setHours(23, 59, 59, 999);
 
-    const endOfDay = new Date();
-    endOfDay.setHours(23, 59, 59, 999);
-
+    // Check if attendance record exists for today
     let attendance = await Attendance.findOne({
       studentId,
-      date: { $gte: startOfDay, $lte: endOfDay },
+      date: { $gte: todayStart, $lte: todayEnd },
     });
 
+    // If not exists, create a new one
     if (!attendance) {
-      attendance = new Attendance({
-        studentId,
-        date: now,
-      });
+      attendance = new Attendance({ studentId });
     }
 
-    // Time Slot Definitions
-    const morningStart = new Date(now);
-    morningStart.setHours(9, 0, 0, 0);
-    const morningEnd = new Date(now);
-    morningEnd.setHours(11, 0, 0, 0);
+    // Slot 1: Morning (9:00 AM - 10:00 AM)
+    if (isTimeInRange(now, 9, 0, 10, 0)) {
+      if (attendance.presentStartTime) {
+        return res.status(400).json({ message: "Morning attendance already marked." });
+      }
+      attendance.presentStartTime = now;
+    }
 
-    const afternoonStart = new Date(now);
-    afternoonStart.setHours(15, 0, 0, 0);
-    const afternoonEnd = new Date(now);
-    afternoonEnd.setHours(16, 0, 0, 0);
-
-    const nightStart = new Date(now);
-    nightStart.setHours(21, 0, 0, 0);
-    const nightEnd = new Date(now);
-    nightEnd.setHours(22, 0, 0, 0);
-
-    // Check Morning Attendance Slot
-    if (now >= morningStart && now < morningEnd) {
+    // Slot 2: Afternoon (3:00 PM - 4:00 PM)
+    else if (isTimeInRange(now, 15, 0, 16, 0)) {
       if (!attendance.presentStartTime) {
-        attendance.presentStartTime = now;
-        await attendance.save();
-        return res.status(200).json({ success: true, message: "Morning attendance marked", data: attendance });
-      } else {
-        return res.status(400).json({ success: false, message: "Morning attendance already marked." });
+        return res.status(400).json({ message: "Morning attendance missing. Cannot mark afternoon attendance." });
       }
+      if (attendance.afternoonAttendance) {
+        return res.status(400).json({ message: "Afternoon attendance already marked." });
+      }
+      attendance.afternoonAttendance = now;
     }
 
-    // Check Afternoon Attendance Slot
-    if (now >= afternoonStart && now < afternoonEnd) {
+    // Slot 3: Night (9:00 PM - 10:00 PM)
+    else if (isTimeInRange(now, 21, 0, 22, 0)) {
       if (!attendance.presentStartTime) {
-        return res.status(400).json({
-          success: false,
-          message: "Morning attendance missing. Cannot mark afternoon attendance.",
-        });
+        return res.status(400).json({ message: "Morning attendance missing. Cannot mark night attendance." });
       }
-
-      if (!attendance.afternoonAttendance) {
-        attendance.afternoonAttendance = now;
-        await attendance.save();
-        return res.status(200).json({ success: true, message: "Afternoon attendance marked", data: attendance });
-      } else {
-        return res.status(400).json({ success: false, message: "Afternoon attendance already marked." });
+      if (attendance.presentEndTime) {
+        return res.status(400).json({ message: "Night attendance already marked." });
       }
+      attendance.presentEndTime = now;
     }
 
-    // Check Night Attendance Slot
-    if (now >= nightStart && now < nightEnd) {
-      if (!attendance.presentStartTime) {
-        return res.status(400).json({
-          success: false,
-          message: "Morning attendance missing. Cannot mark night attendance.",
-        });
-      }
-
-      if (!attendance.presentEndTime) {
-        attendance.presentEndTime = now;
-        await attendance.save();
-        return res.status(200).json({ success: true, message: "Night attendance marked", data: attendance });
-      } else {
-        return res.status(400).json({ success: false, message: "Night attendance already marked." });
-      }
+    else {
+      return res.status(400).json({ message: "Current time does not fall in any attendance slot.2" });
     }
 
-    return res.status(400).json({
-      success: false,
-      message: "Current time does not fall in any attendance slot.9",
-    });
+    // Save to DB
+    await attendance.save();
+    res.status(200).json({ message: "Attendance marked successfully", attendance });
 
   } catch (error) {
     console.error("Error marking attendance:", error);
-    return res.status(500).json({ success: false, message: "Server error", error: error.message });
+    res.status(500).json({ message: "Server error", error });
   }
 });
 
