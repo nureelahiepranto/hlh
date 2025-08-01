@@ -12,15 +12,6 @@ const PDFDocument = require("pdfkit");
 const path = require("path");
 require("dotenv").config();
 
-// Helper to check if current time is within a range
-function isTimeInRange(current, startHour, startMinute, endHour, endMinute) {
-  const now = new Date(current);
-  const start = new Date(current);
-  start.setHours(startHour, startMinute, 0, 0);
-  const end = new Date(current);
-  end.setHours(endHour, endMinute, 59, 999);
-  return now >= start && now <= end;
-}
 
 router.post("/attendanceR", verifyTeacher, async (req, res) => {
   const { studentId } = req.body;
@@ -36,13 +27,14 @@ router.post("/attendanceR", verifyTeacher, async (req, res) => {
     }
 
     // ✅ Adjust time to Bangladesh Time (UTC+6)
-    const now = new Date(new Date().getTime() + 6 * 60 * 60 * 1000);
+    const nowUTC = new Date();
+    const nowBD = new Date(nowUTC.getTime() + 6 * 60 * 60 * 1000);
 
-    // Start and end of today in BD time
-    const startOfDay = new Date(now);
+    // Start and end of BD day
+    const startOfDay = new Date(nowBD);
     startOfDay.setHours(0, 0, 0, 0);
 
-    const endOfDay = new Date(now);
+    const endOfDay = new Date(nowBD);
     endOfDay.setHours(23, 59, 59, 999);
 
     let attendance = await Attendance.findOne({
@@ -53,22 +45,23 @@ router.post("/attendanceR", verifyTeacher, async (req, res) => {
     if (!attendance) {
       attendance = new Attendance({
         studentId,
-        date: now,
+        date: nowBD,
+        timestamp: nowBD,
       });
     }
 
-    const currentHour = now.getHours();
-    const currentMinute = now.getMinutes();
+    const currentHour = nowBD.getHours();
+    const currentMinute = nowBD.getMinutes();
     const totalMinutes = currentHour * 60 + currentMinute;
 
-    console.log("UTC Time:", new Date());
-    console.log("BD Time:", now);
+    console.log("UTC Time:", nowUTC);
+    console.log("BD Time:", nowBD);
     console.log("Current Time:", currentHour + ":" + currentMinute);
 
-    // ✅ Morning slot: 9:00 AM - 10:00 AM (540 to 600)
-    if (totalMinutes >= 1080 && totalMinutes <= 1130) {
+    // ✅ Morning Slot: 9:00 AM - 10:00 AM → 540 to 600
+    if (totalMinutes >= 1130 && totalMinutes <= 1140) {
       if (!attendance.presentStartTime) {
-        attendance.presentStartTime = now;
+        attendance.presentStartTime = nowBD;
         await attendance.save();
         return res.status(200).json({ success: true, message: "Morning attendance marked", data: attendance });
       } else {
@@ -76,14 +69,14 @@ router.post("/attendanceR", verifyTeacher, async (req, res) => {
       }
     }
 
-    // ✅ Afternoon slot: 3:30 PM - 4:00 PM (930 to 960)
-    if (totalMinutes >= 1140 && totalMinutes <= 1160) {
+    // ✅ Afternoon Slot: 3:30 PM - 4:00 PM → 930 to 960
+    if (totalMinutes >= 1145 && totalMinutes <= 1160) {
       if (!attendance.presentStartTime) {
         return res.status(400).json({ success: false, message: "Morning attendance is required before marking afternoon attendance." });
       }
 
       if (!attendance.afternoonAttendance) {
-        attendance.afternoonAttendance = now;
+        attendance.afternoonAttendance = nowBD;
         await attendance.save();
         return res.status(200).json({ success: true, message: "Afternoon attendance marked", data: attendance });
       } else {
@@ -91,14 +84,14 @@ router.post("/attendanceR", verifyTeacher, async (req, res) => {
       }
     }
 
-    // ✅ Night slot: 9:00 PM - 10:00 PM (1260 to 1320)
+    // ✅ Night Slot: 9:00 PM - 10:00 PM → 1260 to 1320
     if (totalMinutes >= 1260 && totalMinutes <= 1320) {
       if (!attendance.presentStartTime) {
         return res.status(400).json({ success: false, message: "Morning attendance is required before marking night attendance." });
       }
 
       if (!attendance.presentEndTime) {
-        attendance.presentEndTime = now;
+        attendance.presentEndTime = nowBD;
         await attendance.save();
         return res.status(200).json({ success: true, message: "Night attendance marked", data: attendance });
       } else {
@@ -108,7 +101,7 @@ router.post("/attendanceR", verifyTeacher, async (req, res) => {
 
     return res.status(400).json({
       success: false,
-      message: "Current time does not fall in any attendance slot.1140",
+      message: "❌ Current time does not fall in any attendance slot.",
     });
 
   } catch (error) {
