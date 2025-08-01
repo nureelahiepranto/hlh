@@ -50,7 +50,7 @@ router.post("/attendanceR", verifyTeacher, async (req, res) => {
     const minute = now.getMinutes();
 
     // Morning slot: 9:00 - 10:00
-    if ((hour === 9) || (hour === 10 && minute === 0)) {
+    if ((hour === 10) || (hour === 11 && minute === 0)) {
       if (!attendance.presentStartTime) {
         attendance.presentStartTime = now;
         await attendance.save();
@@ -98,7 +98,7 @@ router.post("/attendanceR", verifyTeacher, async (req, res) => {
 
     return res.status(400).json({
       success: false,
-      message: "Current time does not fall in any attendance slot.10",
+      message: "Current time does not fall in any attendance slot.11",
     });
 
   } catch (error) {
