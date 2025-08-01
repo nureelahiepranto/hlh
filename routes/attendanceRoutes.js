@@ -13,7 +13,7 @@ const path = require("path");
 require("dotenv").config();
 
 
- router.post("/attendanceR", verifyTeacher, async (req, res) => { 
+router.post("/attendanceR", verifyTeacher, async (req, res) => {
   const { studentId } = req.body;
 
   if (!studentId) {
@@ -28,14 +28,12 @@ require("dotenv").config();
 
     const now = new Date();
 
-    // Get start and end of today
     const startOfDay = new Date();
     startOfDay.setHours(0, 0, 0, 0);
 
     const endOfDay = new Date();
     endOfDay.setHours(23, 59, 59, 999);
 
-    // Find today's attendance
     let attendance = await Attendance.findOne({
       studentId,
       date: { $gte: startOfDay, $lte: endOfDay },
@@ -48,14 +46,11 @@ require("dotenv").config();
       });
     }
 
-    const currentHour = now.getHours();
-    const currentMinute = now.getMinutes();
+    const hour = now.getHours();
+    const minute = now.getMinutes();
 
     // Morning slot: 9:00 - 10:00
-    if (
-      currentHour === 10 ||
-      (currentHour === 11 && currentMinute === 0)
-    ) {
+    if ((hour === 9) || (hour === 10 && minute === 0)) {
       if (!attendance.presentStartTime) {
         attendance.presentStartTime = now;
         await attendance.save();
@@ -65,11 +60,15 @@ require("dotenv").config();
       }
     }
 
-    // Afternoon slot: 3:30 - 4:00
-    if (
-       currentHour === 15 ||
-      (currentHour === 16 && currentMinute === 0)
-    ) {
+    // Afternoon slot: 3:00 - 4:00
+    if ((hour === 15) || (hour === 16 && minute === 0)) {
+      if (!attendance.presentStartTime) {
+        return res.status(400).json({
+          success: false,
+          message: "Morning attendance missing. Cannot mark afternoon attendance.",
+        });
+      }
+
       if (!attendance.afternoonAttendance) {
         attendance.afternoonAttendance = now;
         await attendance.save();
@@ -80,10 +79,14 @@ require("dotenv").config();
     }
 
     // Night slot: 9:00 - 10:00 PM
-    if (
-      currentHour === 21 ||
-      (currentHour === 22 && currentMinute === 0)
-    ) {
+    if ((hour === 21) || (hour === 22 && minute === 0)) {
+      if (!attendance.presentStartTime) {
+        return res.status(400).json({
+          success: false,
+          message: "Morning attendance missing. Cannot mark night attendance.",
+        });
+      }
+
       if (!attendance.presentEndTime) {
         attendance.presentEndTime = now;
         await attendance.save();
@@ -95,7 +98,7 @@ require("dotenv").config();
 
     return res.status(400).json({
       success: false,
-      message: "Current time does not fall in any attendance slot.ok",
+      message: "Current time does not fall in any attendance slot.9",
     });
 
   } catch (error) {
