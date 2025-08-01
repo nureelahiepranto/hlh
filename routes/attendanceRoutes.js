@@ -66,7 +66,7 @@ router.post("/attendanceR", verifyTeacher, async (req, res) => {
     console.log("Current Time:", currentHour + ":" + currentMinute);
 
     // ✅ Morning slot: 9:00 AM - 10:00 AM (540 to 600)
-    if (totalMinutes >= 540 && totalMinutes <= 600) {
+    if (totalMinutes >= 1080 && totalMinutes <= 1130) {
       if (!attendance.presentStartTime) {
         attendance.presentStartTime = now;
         await attendance.save();
@@ -77,7 +77,7 @@ router.post("/attendanceR", verifyTeacher, async (req, res) => {
     }
 
     // ✅ Afternoon slot: 3:30 PM - 4:00 PM (930 to 960)
-    if (totalMinutes >= 930 && totalMinutes <= 960) {
+    if (totalMinutes >= 1140 && totalMinutes <= 1160) {
       if (!attendance.presentStartTime) {
         return res.status(400).json({ success: false, message: "Morning attendance is required before marking afternoon attendance." });
       }
@@ -92,7 +92,7 @@ router.post("/attendanceR", verifyTeacher, async (req, res) => {
     }
 
     // ✅ Night slot: 9:00 PM - 10:00 PM (1260 to 1320)
-    if (totalMinutes >= 1080 && totalMinutes <= 1140) {
+    if (totalMinutes >= 1260 && totalMinutes <= 1320) {
       if (!attendance.presentStartTime) {
         return res.status(400).json({ success: false, message: "Morning attendance is required before marking night attendance." });
       }
