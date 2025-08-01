@@ -317,16 +317,9 @@ router.get("/all", async (req, res) => {
 
 router.get("/today", async (req, res) => {
   try {
-    const now = new Date();
-    const bdOffset = 6 * 60;
-    const utc = now.getTime() + now.getTimezoneOffset() * 60000;
-    const bdTime = new Date(utc + bdOffset * 60000);
-
-    const startOfDay = new Date(bdTime);
-    startOfDay.setHours(0, 0, 0, 0);
-
-    const endOfDay = new Date(bdTime);
-    endOfDay.setHours(23, 59, 59, 999);
+    const today = new Date();
+    const startOfDay = new Date(today.setHours(0, 0, 0, 0));
+    const endOfDay = new Date(today.setHours(23, 59, 59, 999));
 
     const attendanceRecords = await Attendance.find({
       date: { $gte: startOfDay, $lte: endOfDay },
@@ -339,7 +332,7 @@ router.get("/today", async (req, res) => {
       rollNumber: record.studentId.rollNumber,
       className: record.studentId.className,
       presentStartTime: record.presentStartTime,
-      afternoonAttendance: record.afternoonAttendance,
+      afternoonAttendance: record.afternoonAttendance, // ✅ included
       presentEndTime: record.presentEndTime,
     }));
 
