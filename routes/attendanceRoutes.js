@@ -35,12 +35,14 @@ router.post("/attendanceR", verifyTeacher, async (req, res) => {
       return res.status(404).json({ success: false, message: "Student not found." });
     }
 
-    const now = new Date();
+    // ✅ Adjust time to Bangladesh Time (UTC+6)
+    const now = new Date(new Date().getTime() + 6 * 60 * 60 * 1000);
 
-    const startOfDay = new Date();
+    // Start and end of today in BD time
+    const startOfDay = new Date(now);
     startOfDay.setHours(0, 0, 0, 0);
 
-    const endOfDay = new Date();
+    const endOfDay = new Date(now);
     endOfDay.setHours(23, 59, 59, 999);
 
     let attendance = await Attendance.findOne({
@@ -59,6 +61,8 @@ router.post("/attendanceR", verifyTeacher, async (req, res) => {
     const currentMinute = now.getMinutes();
     const totalMinutes = currentHour * 60 + currentMinute;
 
+    console.log("UTC Time:", new Date());
+    console.log("BD Time:", now);
     console.log("Current Time:", currentHour + ":" + currentMinute);
 
     // ✅ Morning slot: 9:00 AM - 10:00 AM (540 to 600)
@@ -73,8 +77,7 @@ router.post("/attendanceR", verifyTeacher, async (req, res) => {
     }
 
     // ✅ Afternoon slot: 3:30 PM - 4:00 PM (930 to 960)
-    if (totalMinutes >= 900 && totalMinutes <= 960) {
-      // ❌ Block if no morning attendance
+    if (totalMinutes >= 930 && totalMinutes <= 960) {
       if (!attendance.presentStartTime) {
         return res.status(400).json({ success: false, message: "Morning attendance is required before marking afternoon attendance." });
       }
@@ -89,8 +92,7 @@ router.post("/attendanceR", verifyTeacher, async (req, res) => {
     }
 
     // ✅ Night slot: 9:00 PM - 10:00 PM (1260 to 1320)
-    if (totalMinutes >= 1020 && totalMinutes <= 1120) {
-      // ❌ Block if no morning attendance
+    if (totalMinutes >= 1080 && totalMinutes <= 1140) {
       if (!attendance.presentStartTime) {
         return res.status(400).json({ success: false, message: "Morning attendance is required before marking night attendance." });
       }
@@ -106,7 +108,7 @@ router.post("/attendanceR", verifyTeacher, async (req, res) => {
 
     return res.status(400).json({
       success: false,
-      message: "Current time does not fall in any attendance slot.1120",
+      message: "Current time does not fall in any attendance slot.1140",
     });
 
   } catch (error) {
@@ -114,7 +116,6 @@ router.post("/attendanceR", verifyTeacher, async (req, res) => {
     return res.status(500).json({ success: false, message: "Server error", error: error.message });
   }
 });
-
 
 // router.post("/attendanceR", verifyTeacher, async (req, res) => { 
 //   const { studentId } = req.body;
