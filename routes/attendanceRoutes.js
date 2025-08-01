@@ -22,7 +22,7 @@ function isTimeInRange(current, startHour, startMinute, endHour, endMinute) {
   return now >= start && now <= end;
 }
 
-router.post("/attendanceR", verifyTeacher, async (req, res) => { 
+router.post("/attendanceR", verifyTeacher, async (req, res) => {
   const { studentId } = req.body;
 
   if (!studentId) {
@@ -37,14 +37,12 @@ router.post("/attendanceR", verifyTeacher, async (req, res) => {
 
     const now = new Date();
 
-    // Get start and end of today
-    const startOfDay = new Date();
+    const startOfDay = new Date(now);
     startOfDay.setHours(0, 0, 0, 0);
 
-    const endOfDay = new Date();
+    const endOfDay = new Date(now);
     endOfDay.setHours(23, 59, 59, 999);
 
-    // Find today's attendance
     let attendance = await Attendance.findOne({
       studentId,
       date: { $gte: startOfDay, $lte: endOfDay },
@@ -57,54 +55,52 @@ router.post("/attendanceR", verifyTeacher, async (req, res) => {
       });
     }
 
-    const currentHour = now.getHours();
-    const currentMinute = now.getMinutes();
+    // Helper function to check time range
+    const isWithinTimeRange = (startHour, startMin, endHour, endMin) => {
+      const start = new Date(now);
+      start.setHours(startHour, startMin, 0, 0);
+      const end = new Date(now);
+      end.setHours(endHour, endMin, 0, 0);
+      return now >= start && now <= end;
+    };
 
-    // Morning slot: 9:00 - 10:00
-    if (
-      currentHour === 11 ||
-      (currentHour === 12 && currentMinute === 0)
-    ) {
+    // Morning: 9:00 AM - 10:00 AM
+    if (isWithinTimeRange(11, 0, 12, 0)) {
       if (!attendance.presentStartTime) {
         attendance.presentStartTime = now;
         await attendance.save();
-        return res.status(200).json({ success: true, message: "Morning attendance marked", data: attendance });
+        return res.status(200).json({ success: true, message: "✅ Morning attendance marked", data: attendance });
       } else {
-        return res.status(400).json({ success: false, message: "Morning attendance already marked." });
+        return res.status(400).json({ success: false, message: "⛔ Morning attendance already marked." });
       }
     }
 
-    // Afternoon slot: 3:30 - 4:00
-    if (
-       currentHour === 15 ||
-      (currentHour === 16 && currentMinute === 0)
-    ) {
+    // Afternoon: 3:30 PM - 4:00 PM
+    if (isWithinTimeRange(15, 30, 16, 0)) {
       if (!attendance.afternoonAttendance) {
         attendance.afternoonAttendance = now;
         await attendance.save();
-        return res.status(200).json({ success: true, message: "Afternoon attendance marked", data: attendance });
+        return res.status(200).json({ success: true, message: "✅ Afternoon attendance marked", data: attendance });
       } else {
-        return res.status(400).json({ success: false, message: "Afternoon attendance already marked." });
+        return res.status(400).json({ success: false, message: "⛔ Afternoon attendance already marked." });
       }
     }
 
-    // Night slot: 9:00 - 10:00 PM
-    if (
-      currentHour === 21 ||
-      (currentHour === 22 && currentMinute === 0)
-    ) {
+    // Night: 9:00 PM - 10:00 PM
+    if (isWithinTimeRange(21, 0, 22, 0)) {
       if (!attendance.presentEndTime) {
         attendance.presentEndTime = now;
         await attendance.save();
-        return res.status(200).json({ success: true, message: "Night attendance marked", data: attendance });
+        return res.status(200).json({ success: true, message: "✅ Night attendance marked", data: attendance });
       } else {
-        return res.status(400).json({ success: false, message: "Night attendance already marked." });
+        return res.status(400).json({ success: false, message: "⛔ Night attendance already marked." });
       }
     }
 
+    // Not in any time range
     return res.status(400).json({
       success: false,
-      message: "Current time does not fall in any attendance slot.10",
+      message: "❌ Current time does not fall in any attendance slot.99",
     });
 
   } catch (error) {
