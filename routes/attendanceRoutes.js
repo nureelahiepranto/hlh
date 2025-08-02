@@ -57,11 +57,11 @@ router.post("/attendanceR", verifyTeacher, async (req, res) => {
     console.log("BD Time:", currentHour + ":" + currentMinute);
 
     // ✅ Morning slot: 9:00 AM - 10:00 AM (540 to 600)
-    if (totalMinutes >= 780 && totalMinutes <= 850) {
+    if (totalMinutes >= 540 && totalMinutes <= 600) {
       if (!attendance.presentStartTime) {
         attendance.presentStartTime = bdTime;
         await attendance.save();
-        return res.status(200).json({ success: true, message: "Morning attendance marked11", data: attendance });
+        return res.status(200).json({ success: true, message: "Morning attendance marked", data: attendance });
       } else {
         return res.status(400).json({ success: false, message: "Morning attendance already marked" });
       }
