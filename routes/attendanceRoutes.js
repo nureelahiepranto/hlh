@@ -57,18 +57,18 @@ router.post("/attendanceR", verifyTeacher, async (req, res) => {
     console.log("BD Time:", currentHour + ":" + currentMinute);
 
     // ✅ Morning slot: 9:00 AM - 10:00 AM (540 to 600)
-    if (totalMinutes >= 0 && totalMinutes <= 120) {
+    if (totalMinutes >= 660 && totalMinutes <= 690) {
       if (!attendance.presentStartTime) {
         attendance.presentStartTime = bdTime;
         await attendance.save();
-        return res.status(200).json({ success: true, message: "Morning attendance marked", data: attendance });
+        return res.status(200).json({ success: true, message: "Morning attendance marked11", data: attendance });
       } else {
         return res.status(400).json({ success: false, message: "Morning attendance already marked" });
       }
     }
 
     // ✅ Afternoon slot: 3:30 PM - 4:00 PM (930 to 960)
-    if (totalMinutes >= 1400 && totalMinutes <= 1410) {
+    if (totalMinutes >= 700 && totalMinutes <= 710) {
       if (!attendance.presentStartTime) {
         return res.status(400).json({ success: false, message: "Morning attendance is required before marking afternoon attendance." });
       }
@@ -99,7 +99,7 @@ router.post("/attendanceR", verifyTeacher, async (req, res) => {
 
     return res.status(400).json({
       success: false,
-      message: "Current time does not fall in any attendance slot.14",
+      message: "Current time does not fall in any attendance slot.11",
     });
 
   } catch (error) {
@@ -317,39 +317,65 @@ router.get("/all", async (req, res) => {
 
 router.get("/today", async (req, res) => {
   try {
+    // 1. Get today's date range (UTC)
     const today = new Date();
     const startOfDay = new Date(today.setHours(0, 0, 0, 0));
     const endOfDay = new Date(today.setHours(23, 59, 59, 999));
 
+    // 2. Fetch attendance records
     const attendanceRecords = await Attendance.find({
       date: { $gte: startOfDay, $lte: endOfDay },
     }).populate("studentId", "name rollNumber className");
 
-    const formattedRecords = attendanceRecords.map((record) => {
-      // ✅ Convert UTC times to Bangladesh Time (UTC+6)
-      const formatTime = (utcDate) => {
-        if (!utcDate) return null;
-        const bdOffset = 6 * 60 * 60000; // UTC+6 in milliseconds
-        const bdTime = new Date(utcDate.getTime() + bdOffset);
-        return bdTime.toISOString(); // Or format as "HH:mm:ss"
-      };
-
+    // 3. Format timestamps to Bangladesh Time (UTC+6)
+    const formatTime = (utcDate) => {
+      if (!utcDate) return null;
+      const bdTime = new Date(utcDate);
+      bdTime.setHours(bdTime.getHours() + 6); // Convert UTC → UTC+6
       return {
-        id: record._id,
-        studentId: record.studentId._id,
-        name: record.studentId.name,
-        rollNumber: record.studentId.rollNumber,
-        className: record.studentId.className,
-        presentStartTime: formatTime(record.presentStartTime),
-        afternoonAttendance: formatTime(record.afternoonAttendance),
-        presentEndTime: formatTime(record.presentEndTime),
+        iso: bdTime.toISOString(), // For consistency
+        timeString: bdTime.toLocaleTimeString("en-US", { // For display
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+          hour12: true,
+          timeZone: "UTC", // Force UTC+6 (already converted)
+        }),
       };
+    };
+
+    // 4. Prepare response
+    const formattedRecords = attendanceRecords.map((record) => ({
+      id: record._id,
+      studentId: record.studentId._id,
+      name: record.studentId.name,
+      rollNumber: record.studentId.rollNumber,
+      className: record.studentId.className,
+      presentStartTime: formatTime(record.presentStartTime)?.timeString || "N/A",
+      afternoonAttendance: formatTime(record.afternoonAttendance)?.timeString || "N/A",
+      presentEndTime: formatTime(record.presentEndTime)?.timeString || "N/A",
+      // Include raw UTC timestamps (optional)
+      _raw: {
+        presentStartTime: record.presentStartTime,
+        afternoonAttendance: record.afternoonAttendance,
+        presentEndTime: record.presentEndTime,
+      },
+    }));
+
+    // 5. Send response
+    res.status(200).json({ 
+      success: true,
+      attendance: formattedRecords,
+      timezone: "UTC+6 (Bangladesh Time)", 
     });
 
-    res.status(200).json({ attendance: formattedRecords });
   } catch (error) {
     console.error("Error fetching today's attendance:", error);
-    res.status(500).json({ message: "Failed to fetch today's attendance", error });
+    res.status(500).json({ 
+      success: false,
+      message: "Failed to fetch today's attendance",
+      error: error.message,
+    });
   }
 });
 
