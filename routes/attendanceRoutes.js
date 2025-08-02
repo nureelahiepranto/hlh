@@ -83,7 +83,7 @@ router.post("/attendanceR", verifyTeacher, async (req, res) => {
     }
 
     // ✅ Night slot: 9:00 PM - 10:00 PM (1260 to 1320)
-    if (totalMinutes >= 760 && totalMinutes <= 770) {
+    if (totalMinutes >= 760 && totalMinutes <= 810) {
       if (!attendance.presentStartTime) {
         return res.status(400).json({ success: false, message: "Morning attendance is required before marking night attendance." });
       }
