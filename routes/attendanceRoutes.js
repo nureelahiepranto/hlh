@@ -430,12 +430,12 @@ const checkAbsentStudents = async () => {
 // });
 
 // Schedule the job to run at 10:00 AM every day
-cron.schedule("0 10 * * *", () => {
-  console.log("Running absent student check at 10:00 AM...");
-  checkAbsentStudents();
-}, {
-  timezone: "Asia/Dhaka" // Adjust the timezone if needed
-});
+// cron.schedule("0 10 * * *", () => {
+//   console.log("Running absent student check at 10:00 AM...");
+//   checkAbsentStudents();
+// }, {
+//   timezone: "Asia/Dhaka" // Adjust the timezone if needed
+// });
 
 
 
@@ -488,12 +488,25 @@ router.get("/api/attendance/download/:date", async (req, res) => {
       },
     });
 
+    // ✅ Format to Bangladesh Time
+    const formatToBDTime = (time) => {
+    if (!time || isNaN(new Date(time))) return "N/A";
+    const date = new Date(time);
+    const hours = date.getUTCHours();
+    const minutes = date.getUTCMinutes();
+    const ampm = hours >= 12 ? "PM" : "AM";
+    const formattedHours = hours % 12 || 12;
+    const formattedMinutes = minutes.toString().padStart(2, "0");
+    return `${formattedHours}:${formattedMinutes} ${ampm}`;
+  };
+
+    // ✅ PDF generation
     const doc = new PDFDocument({ margin: 40, size: "A4" });
     const filePath = path.join(__dirname, "Attendance_Report.pdf");
     const stream = fs.createWriteStream(filePath);
     doc.pipe(stream);
 
-    // 🔹 Branded Header
+    // 🔹 Header
     doc
       .fontSize(18)
       .font("Helvetica-Bold")
@@ -506,7 +519,6 @@ router.get("/api/attendance/download/:date", async (req, res) => {
       .fillColor("#2e86de")
       .text("Attendance Report", { align: "center" });
 
-
     doc
       .moveDown(0.3)
       .fontSize(12)
@@ -515,11 +527,11 @@ router.get("/api/attendance/download/:date", async (req, res) => {
 
     doc.moveDown(1);
 
-    // 🔹 Table Headers
+    // 🔹 Table Header
     const tableTop = 150;
     const startX = 40;
-    const colWidths = [200, 100, 100, 100];
-    const headers = ["Name", "Start Time", "End Time", "Status"];
+    const colWidths = [160, 90, 90, 90, 90]; // 5 columns now
+    const headers = ["Name", "Start Time", "Afternoon Time", "End Time", "Status"];
 
     doc.font("Helvetica-Bold").fontSize(11);
     doc.fillColor("#ffffff");
@@ -548,8 +560,9 @@ router.get("/api/attendance/download/:date", async (req, res) => {
 
       const rowData = [
         attendance.studentId?.userId?.name || "N/A",
-        attendance.presentStartTime ? new Date(attendance.presentStartTime).toLocaleTimeString() : "N/A",
-        attendance.presentEndTime ? new Date(attendance.presentEndTime).toLocaleTimeString() : "N/A",
+        formatToBDTime(attendance.presentStartTime),
+        formatToBDTime(attendance.afternoonAttendance),
+        formatToBDTime(attendance.presentEndTime),
         "Present"
       ];
 
@@ -576,14 +589,16 @@ router.get("/api/attendance/download/:date", async (req, res) => {
           console.error("Download Error:", err);
           res.status(500).send("Download error.");
         }
-        fs.unlinkSync(filePath);
+        fs.unlinkSync(filePath); // delete after sending
       });
     });
+
   } catch (error) {
     console.error("PDF Generation Error:", error);
     res.status(500).json({ error: "Failed to generate report." });
   }
 });
+
 
 
 
