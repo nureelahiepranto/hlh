@@ -26,10 +26,10 @@ router.get("/stats", async (req, res) => {
 router.get("/recent-activities", async (req, res) => {
   try {
     const activities = [
-      "New student John Doe enrolled.",
-      "Teacher Mr. Smith marked attendance.",
+      "New Employee John Doe enrolled.",
+      "Mr. Smith marked attendance.",
       "$5,000 fees collected today.",
-      "Class schedules updated.",
+      "Employee schedules updated.",
     ];
     res.json(activities);
   } catch (error) {
