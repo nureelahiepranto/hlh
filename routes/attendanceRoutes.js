@@ -69,9 +69,9 @@ router.post("/attendanceR", verifyTeacher, async (req, res) => {
 
     // ✅ Afternoon slot: 3:30 PM - 4:00 PM (930 to 960)
     if (totalMinutes >= 840 && totalMinutes <= 970) {
-      if (!attendance.presentStartTime) {
-        return res.status(400).json({ success: false, message: "Morning attendance is required before marking afternoon attendance." });
-      }
+      // if (!attendance.presentStartTime) {
+      //   return res.status(400).json({ success: false, message: "Morning attendance is required before marking afternoon attendance." });
+      // }
 
       if (!attendance.afternoonAttendance) {
         attendance.afternoonAttendance = bdTime;
@@ -84,9 +84,9 @@ router.post("/attendanceR", verifyTeacher, async (req, res) => {
 
     // ✅ Night slot: 9:00 PM - 10:00 PM (1260 to 1320)
     if (totalMinutes >= 1260 && totalMinutes <= 1320) {
-      if (!attendance.presentStartTime) {
-        return res.status(400).json({ success: false, message: "Morning attendance is required before marking night attendance." });
-      }
+      // if (!attendance.presentStartTime) {
+      //   return res.status(400).json({ success: false, message: "Morning attendance is required before marking night attendance." });
+      // }
 
       if (!attendance.presentEndTime) {
         attendance.presentEndTime = bdTime;
@@ -107,166 +107,6 @@ router.post("/attendanceR", verifyTeacher, async (req, res) => {
     return res.status(500).json({ success: false, message: "Server error", error: error.message });
   }
 });
-
-// router.post("/attendanceR", verifyTeacher, async (req, res) => { 
-//   const { studentId } = req.body;
-
-//   if (!studentId) {
-//     return res.status(400).json({ success: false, message: "studentId is required." });
-//   }
-
-//   try {
-//     const student = await Student.findById(studentId);
-//     if (!student) {
-//       return res.status(404).json({ success: false, message: "Student not found." });
-//     }
-
-//     const now = new Date();
-
-//     // Get start and end of today
-//     const startOfDay = new Date();
-//     startOfDay.setHours(0, 0, 0, 0);
-
-//     const endOfDay = new Date();
-//     endOfDay.setHours(23, 59, 59, 999);
-
-//     // Find today's attendance
-//     let attendance = await Attendance.findOne({
-//       studentId,
-//       date: { $gte: startOfDay, $lte: endOfDay },
-//     });
-
-//     if (!attendance) {
-//       attendance = new Attendance({
-//         studentId,
-//         date: now,
-//       });
-//     }
-
-//     const currentHour = now.getHours();
-//     const currentMinute = now.getMinutes();
-//     const totalMinutes = currentHour * 60 + currentMinute;
-
-//     // Morning slot: 9:00 AM - 10:00 AM (540 to 600)
-//     if (totalMinutes >= 540 && totalMinutes <= 600) {
-//       if (!attendance.presentStartTime) {
-//         attendance.presentStartTime = now;
-//         await attendance.save();
-//         return res.status(200).json({ success: true, message: "Morning attendance marked", data: attendance });
-//       } else {
-//         return res.status(400).json({ success: false, message: "Morning attendance already marked" });
-//       }
-//     }
-
-//     // Afternoon slot: 3:30 PM - 4:00 PM (930 to 960)
-//     if (totalMinutes >= 930 && totalMinutes <= 960) {
-//       if (!attendance.afternoonAttendance) {
-//         attendance.afternoonAttendance = now;
-//         await attendance.save();
-//         return res.status(200).json({ success: true, message: "Afternoon attendance marked", data: attendance });
-//       } else {
-//         return res.status(400).json({ success: false, message: "Afternoon attendance already marked." });
-//       }
-//     }
-
-//     // Night slot: 9:00 PM - 10:00 PM (1260 to 1320)
-//     if (totalMinutes >= 1260 && totalMinutes <= 1320) {
-//       if (!attendance.presentEndTime) {
-//         attendance.presentEndTime = now;
-//         await attendance.save();
-//         return res.status(200).json({ success: true, message: "Night attendance marked", data: attendance });
-//       } else {
-//         return res.status(400).json({ success: false, message: "Night attendance already marked." });
-//       }
-//     }
-
-//     return res.status(400).json({
-//       success: false,
-//       message: "Current time does not fall in any attendance slot.540",
-//     });
-
-
-//   } catch (error) {
-//     console.error("Error marking attendance:", error);
-//     return res.status(500).json({ success: false, message: "Server error", error: error.message });
-//   }
-// });
-
-
-// router.post("/attendanceR", verifyTeacher, async (req, res) => {
-//   const { studentId } = req.body;
-
-//   if (!studentId ) {
-//     return res.status(400).json({ success: false, message: "studentId are required." });
-//   }
-
-//   try {
-//     // Validate student
-//     const student = await Student.findOne({ _id: studentId });
-//     if (!student) {
-//       return res.status(404).json({ success: false, message: "Student not found with provided phone number." });
-//     }
-
-//     const now = new Date();
-
-//     // Define today's date range
-//     const startOfDay = new Date();
-//     startOfDay.setHours(0, 0, 0, 0);
-
-//     const endOfDay = new Date();
-//     endOfDay.setHours(23, 59, 59, 999);
-
-//     // Check if attendance exists for today
-//     let attendance = await Attendance.findOne({
-//       studentId,
-//       date: { $gte: startOfDay, $lte: endOfDay },
-//     });
-
-//     if (!attendance) {
-//       // Step 1: Mark attendance start time (first check-in)
-//       attendance = new Attendance({
-//         studentId,
-//         presentStartTime: now,
-//         date: now,
-//       });
-
-//       await attendance.save();
-
-//       return res.status(201).json({
-//         success: true,
-//         message: "Attendance start time marked successfully.",
-//         data: attendance,
-//       });
-//     }
-
-//     // Step 2: Mark attendance end time (second check-out)
-//     if (!attendance.presentEndTime) {
-//       attendance.presentEndTime = now;
-//       await attendance.save();
-
-//       return res.status(200).json({
-//         success: true,
-//         message: "Attendance end time marked successfully.",
-//         data: attendance,
-//       });
-//     }
-
-//     // Step 3: Already marked both start and end
-//     return res.status(400).json({
-//       success: false,
-//       message: "Attendance already marked (start and end) for today.",
-//     });
-
-//   } catch (error) {
-//     console.error("Error marking attendance:", error.message);
-//     res.status(500).json({
-//       success: false,
-//       message: "Internal server error while marking attendance.",
-//       error: error.message,
-//     });
-//   }
-// });
-
 
 
 router.get("/studentsD", async (req, res) => {
